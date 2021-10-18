@@ -1,7 +1,8 @@
-WebBanking{version = 0.04,
+WebBanking{version = 1.00,
     url = "https://incentive.online/",
     services = {"Evli savings","Evli portfolio" },
-description = "Fetches Data from EVLI Bank - Evli Awards Management Oy"}
+    description = "Fetches Data Incentiv Online Platform from EVLI Bank - Evli Awards Management Oy"
+}
 
 local connection = nil
 local loginresponse = nil
@@ -15,26 +16,19 @@ local URL_start = 'https://incentive.online/web/eam-holder'
 
 function SupportsBank (protocol, bankCode)
     return protocol == ProtocolWebBanking and bankCode == "Evli portfolio"
-    -- ProtocolFinTS , ProtocolWebBanking
 end
 
 function InitializeSession (protocol, bankCode, username, customer, password)
     connection.language = "en-EN"
-
-    print("Version" .. version)
     local response = HTML(connection:get(url))
 
     response:xpath("//input[@name='_58_login']"):attr("value", username)
     response:xpath("//input[@name='_58_password']"):attr("value", password)
     loginresponse = HTML(connection:request(response:xpath("//*[@id='login']"):click()))
 
-    --print(loginresponse)
     -- Wrong Error Text used correct me
     if (loginresponse:xpath("//*[@class='alert alert-error']"):text() == "Keine gültigen Zugangsdaten.") then
         return LoginFailed
-    end
-    if debug then
-        print("End InitializeSession")
     end
 end
 
@@ -76,13 +70,13 @@ function ListAccounts (knownAccounts)
             type = "AccountTypePortfolio"
         })
         ]]--
-        return accounts
-    end
+    return accounts
+end
 
 function RefreshAccount (account, since)
     if account.portfolio then
-        local instruments = {}
         -- Refresh Portfolio
+        local instruments = {}
         local portfolioPageHTML = HTML(connection:get(URL_Portfolio))
         local startPageHTMLPriceandHistoryDashboard = HTML(connection:get(URL_start)):xpath("//div[@class='share-description']"):children()
         local price = toLocalNum(startPageHTMLPriceandHistoryDashboard:get(3):xpath("//h3/span[@class='price']"):text())
@@ -118,56 +112,49 @@ function RefreshAccount (account, since)
                 })
 
         end
-                             for k,v in pairs(instruments[1]) do
-                        print(k,v)
-                    end
-    return {securities=instruments}
-else
-             -- Refresh Savings account
-             local eventName = ""
-            -- payments to the bank
-            local savingsPageHTML = HTML(connection:get(URLsavings))
-            local balance = savingsPageHTML:xpath("//tfoot/tr[@class='event-summary-row']"):children():get(6):text()
-            balance = toLocalNum(balance)
-            -- Saveings:
-            eventName = savingsPageHTML:xpath("//tbody[@id='tablebody']/div/div/tr/td/a"):text()
-            local savingsTableRows = savingsPageHTML:xpath("//table[@class='event-details-table']/tbody/tr[@class='event-table-row']")
-            local savings = {}
-            local len = savingsTableRows:length()
-            -- print(len)
-            for i=1,len do
-                local row = nil
-                row = savingsTableRows:get(i):children()
-                if row:get(1):text() == "Savings" then
+        return {securities=instruments}
+    else
+        -- Refresh Savings account
+        local eventName = ""
+        -- payments to the bank
+        local savingsPageHTML = HTML(connection:get(URLsavings))
+        local balance = savingsPageHTML:xpath("//tfoot/tr[@class='event-summary-row']"):children():get(6):text()
+        balance = toLocalNum(balance)
+        -- Saveings:
+        eventName = savingsPageHTML:xpath("//tbody[@id='tablebody']/div/div/tr/td/a"):text()
+        local savingsTableRows = savingsPageHTML:xpath("//table[@class='event-details-table']/tbody/tr[@class='event-table-row']")
+        local savings = {}
+        local len = savingsTableRows:length()
 
-                    local amount = 0.00
-                    local purpose = ""
-                    local bookingDate = nil
-                        local localCurrency = "" -- for the LC field in Table
+        for i=1,len do
+            local row = nil
+            row = savingsTableRows:get(i):children()
+            if row:get(1):text() == "Savings" then
 
-                        purpose = row:get(1):text()
-                        localCurrency = row:get(4):text()
-                        purpose = purpose .."\n"..eventName .." LC:" ..localCurrency .."€"
+                local amount = 0.00
+                local purpose = ""
+                local bookingDate = nil
+                local localCurrency = "" -- for the LC field in Table
 
-                        amount = toLocalNum( row:get(3):text() )
-                        bookingDate = toPOSIXDate( row:children():get(1):text() )
-                        
+                purpose = row:get(1):text()
+                localCurrency = row:get(4):text()
+                purpose = purpose .."\n"..eventName .." LC:" ..localCurrency .."€"
 
-                        table.insert (
-                            savings, {
-                                bookingDate = bookingDate,
-                                purpose = purpose,
-                                amount = amount
-                            }
-                            )
+                amount = toLocalNum( row:get(3):text() )
+                bookingDate = toPOSIXDate( row:children():get(1):text() )
+                
+                table.insert (
+                    savings, {
+                        bookingDate = bookingDate,
+                        purpose = purpose,
+                        amount = amount
+                    })
+            end
+        end
+        -- Sharepurchases
+        local transactionHistory = HTML(connection:get(URLshare_purchases)):xpath("//tbody[@id='tablebody']/div/div/tr/td/div/div/table/tbody"):children()
 
-                    end
-                end
-            -- Sharepurchases
-            local purchasePageHTML = HTML(connection:get(URLshare_purchases))
-            local purhasetable = purchasePageHTML:xpath("//tbody[@id='tablebody']/div/div/tr/td/div/div/table/tbody")
-            local transactionHistory = purhasetable:children()
-            for i=3,transactionHistory:length()-1 do -- igonre first 2 rows and last row
+        for i=3,transactionHistory:length()-1 do -- igonre first 2 rows and last row
             local td = transactionHistory:get(i):children()
             local amount = 0.00
             local purpose = ""
@@ -184,12 +171,10 @@ else
                     purpose = purpose,
                     amount = amount
                 })
-
             -- End For Purchases
         end
         return {balance=balance, transactions=savings}
         -- End IF
-
     end
 end
 

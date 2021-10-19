@@ -13,7 +13,6 @@ Currency for alle Transactions is assumed as SEK
 Currency for LC is assumed as EUR
 
 ## Knowen Issues
-Evli Portfilo - Instrument Details show the wrong Units e.g. % instead of SEK
 Login failed error is not cateched
 
 ## Nice to have 

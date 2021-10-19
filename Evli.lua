@@ -1,4 +1,4 @@
-WebBanking{version = 1.00,
+WebBanking{version = 1.02,
     url = "https://incentive.online/",
     services = {"Evli savings","Evli portfolio" },
     description = "Fetches Data Incentiv Online Platform from EVLI Bank - Evli Awards Management Oy"
@@ -83,8 +83,7 @@ function RefreshAccount (account, since)
         local market = startPageHTMLPriceandHistoryDashboard:get(2):children():get(2):text()
 
         local tradeTimestamp = toPOSIXDate(startPageHTMLPriceandHistoryDashboard:get(2):children():get(3):text())
-        local instrumentTable = portfolioPageHTML:xpath("//div[@id='id4____evliCustodyBalances__WAR__holderui__']/div/table[@class='materials-table transaction-table-holder evli-positions-table']/tbody"):children()
-        
+        local instrumentTable = portfolioPageHTML:xpath("//div[@id='id3____evliCustodyBalances__WAR__holderui__']/div/table[@class='materials-table transaction-table-holder evli-positions-table']/tbody"):children()
         for i = 1 , instrumentTable:length()-2 do
             local rowData = instrumentTable:get(i):children()
             local instrumentMetaData = rowData:get(1):children():get(1):children()
@@ -102,7 +101,6 @@ function RefreshAccount (account, since)
                     isin = isin,
                     market = market,
                     tradeTimestamp = tradeTimestamp,
-                    currency = "SEK",
                     quantity = quantity,
                     purchasePrice = purchasePrice,
                     amount = amount ,
